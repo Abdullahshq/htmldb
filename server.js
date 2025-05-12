@@ -17,6 +17,36 @@ app.use(express.static(path.join(__dirname, '/')));
 
 // Database configuration
 const getDbConfig = () => {
+  // Parse connection string if available
+  if (process.env.DB_CONNECTION_STRING) {
+    try {
+      const connectionString = process.env.DB_CONNECTION_STRING;
+      const regex = /Server=tcp:([^,]+).*?Initial Catalog=([^;]+).*?User ID=([^;]+).*?Password=([^;]+)/;
+      const match = connectionString.match(regex);
+      
+      if (match) {
+        return {
+          server: match[1],
+          authentication: {
+            type: 'default',
+            options: {
+              userName: match[3],
+              password: match[4]
+            }
+          },
+          options: {
+            database: match[2],
+            encrypt: true,
+            trustServerCertificate: false
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing connection string:', error);
+    }
+  }
+  
+  // Fall back to separate config variables if parsing fails
   return {
     server: process.env.DB_SERVER,
     authentication: {
